@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Meaw Bot Web Controller</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin-top: 30px;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    #status {
+      font-weight: bold;
+      padding: 10px 20px;
+      border-radius: 10px;
+      margin: 20px auto;
+      display: inline-block;
+    }
+
+    .connected {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .disconnected {
+      background-color: #f44336;
+      color: white;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    button {
+      font-size: 24px;
+      padding: 20px;
+      border: none;
+      border-radius: 10px;
+      background-color: #2196F3;
+      color: white;
+      transition: 0.2s;
+    }
+
+    button:active {
+      background-color: #0b7dda;
+      transform: scale(0.97);
+    }
+
+    #connectBtn {
+      font-size: 18px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      padding: 10px 20px;
+      margin-bottom: 10px;
+      background-color: #03ac73;
+      border-radius: 6px;
+      transition: 0.2s;
+    }
+
+    #connectBtn.connected {
+      background-color: #f44336;
+    }
+
+    #connectBtn:hover {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🕹️ Meaw Bot Controller</h1>
+
+  <!-- Connect/Disconnect Button -->
+  <button id="connectBtn" onclick="toggleConnection()">Connect to ROS Bridge</button>
+  <div id="status" class="disconnected">Status: Not Connected</div>
+
+  <!-- Robot Control Buttons -->
+  <div id="controls" class="button-grid" style="display: none;">
+    <button onclick="sendCmd('u')">U</button>
+    <button onclick="sendCmd('i')">I</button>
+    <button onclick="sendCmd('o')">O</button>
+
+    <button onclick="sendCmd('j')">J</button>
+    <button onclick="sendCmd('k')">K</button>
+    <button onclick="sendCmd('l')">L</button>
+
+    <button onclick="sendCmd('m')">M</button>
+    <button onclick="sendCmd(',')">,</button>
+    <button onclick="sendCmd('.')">.</button>
+  </div>
+
+  <script>
+    let socket = null;
+
+    function toggleConnection() {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close(); // Disconnect
+      } else {
+        connectToROS(); // Connect
+      }
+    }
+
+    function connectToROS() {
+      socket = new WebSocket('ws://192.168.10.13:9090'); // Replace with your Pi IP
+
+      socket.onopen = () => {
+        updateStatus('Connected', true);
+        document.getElementById('controls').style.display = 'grid';
+        const btn = document.getElementById('connectBtn');
+        btn.textContent = 'Disconnect';
+        btn.classList.add('connected');
+      };
+
+      socket.onclose = () => {
+        updateStatus('Disconnected', false);
+        document.getElementById('controls').style.display = 'none';
+        const btn = document.getElementById('connectBtn');
+        btn.textContent = 'Connect to ROS Bridge';
+        btn.classList.remove('connected');
+      };
+
+      socket.onerror = (error) => {
+        updateStatus('Connection Error', false);
+        console.error('WebSocket error:', error);
+      };
+    }
+
+    function updateStatus(text, isConnected) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.textContent = `Status: ${text}`;
+      statusDiv.className = isConnected ? 'connected' : 'disconnected';
+    }
+
+    function sendCmd(key) {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        alert('Not connected to ROS Bridge!');
+        return;
+      }
+
+      let twist = {
+        linear: { x: 0.0, y: 0.0, z: 0.0 },
+        angular: { x: 0.0, y: 0.0, z: 0.0 }
+      };
+
+      switch (key) {
+        case 'i': twist.linear.x = 0.5; break;
+        case ',': twist.linear.x = -0.5; break;
+        case 'j': twist.angular.z = 1.0; break;
+        case 'l': twist.angular.z = -1.0; break;
+        case 'u': twist.linear.x = 0.5; twist.angular.z = 1.0; break;
+        case 'o': twist.linear.x = 0.5; twist.angular.z = -1.0; break;
+        case 'm': twist.linear.x = -0.5; twist.angular.z = 1.0; break;
+        case '.': twist.linear.x = -0.5; twist.angular.z = -1.0; break;
+        case 'k': break; // Stop
+        default: break;
+      }
+
+      const message = {
+        op: 'publish',
+        topic: '/cmd_vel',
+        msg: twist
+      };
+
+      socket.send(JSON.stringify(message));
+      console.log(`Command sent for key: ${key}`);
+    }
+  </script>
+</body>
+</html>
