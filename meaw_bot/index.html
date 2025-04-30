@@ -59,11 +59,9 @@
 
     #connectBtn {
       font-size: 18px;
-      font-family: Arial, Helvetica, sans-serif;
-      font-weight: bold;
       padding: 10px 20px;
       margin-bottom: 10px;
-      background-color: #03ac73;
+      background-color: #555;
       border-radius: 6px;
       transition: 0.2s;
     }
@@ -75,6 +73,12 @@
     #connectBtn:hover {
       cursor: pointer;
     }
+
+    #cameraContainer img {
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -83,6 +87,12 @@
   <!-- Connect/Disconnect Button -->
   <button id="connectBtn" onclick="toggleConnection()">Connect to ROS Bridge</button>
   <div id="status" class="disconnected">Status: Not Connected</div>
+
+  <!-- Camera Feed (Initially hidden) -->
+  <div id="cameraContainer" style="display: none;">
+    <h2>🎥 Camera Feed</h2>
+    <img src="http://192.168.10.13:8080/stream?topic=/image_raw&type=mjpeg&quality=80" width="640" height="420" />
+  </div>
 
   <!-- Robot Control Buttons -->
   <div id="controls" class="button-grid" style="display: none;">
@@ -111,11 +121,12 @@
     }
 
     function connectToROS() {
-      socket = new WebSocket('ws://192.168.10.13:9090'); // Replace with your Pi IP
+      socket = new WebSocket('ws://192.168.10.13:9090'); // Replace with your Pi's IP
 
       socket.onopen = () => {
         updateStatus('Connected', true);
         document.getElementById('controls').style.display = 'grid';
+        document.getElementById('cameraContainer').style.display = 'block';
         const btn = document.getElementById('connectBtn');
         btn.textContent = 'Disconnect';
         btn.classList.add('connected');
@@ -124,6 +135,7 @@
       socket.onclose = () => {
         updateStatus('Disconnected', false);
         document.getElementById('controls').style.display = 'none';
+        document.getElementById('cameraContainer').style.display = 'none';
         const btn = document.getElementById('connectBtn');
         btn.textContent = 'Connect to ROS Bridge';
         btn.classList.remove('connected');
