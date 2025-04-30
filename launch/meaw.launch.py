@@ -3,7 +3,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     return LaunchDescription([
-        # Your custom controller.py node
+        # Custom controller node
         Node(
             package='meaw_bot',
             executable='controller',
@@ -11,7 +11,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # Webcam publisher node
+        # Camera node
         Node(
             package='v4l2_camera',
             executable='v4l2_camera_node',
@@ -22,4 +22,20 @@ def generate_launch_description():
             }],
             output='screen'
         ),
+
+        # WebSocket server for web app
+        Node(
+            package='rosbridge_server',
+            executable='rosbridge_websocket',
+            name='rosbridge_websocket',
+            output='screen'
+        ),
+
+        # MJPEG video stream server
+        Node(
+            package='web_video_server',
+            executable='web_video_server',
+            name='web_video_server',
+            output='screen'
+        )
     ])
